@@ -1,6 +1,7 @@
 package com.es.service.impl;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -16,6 +17,10 @@ public class AppServiceImpl implements AppService{
 	@Override
 	public List<String> getAllAccounts() {
 		return appDao.getAllAccounts();
+	}
+	@Override
+	public void save(Map<String,String> map) {
+		
 	}
 
 }

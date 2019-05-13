@@ -32,19 +32,20 @@
 		<!-- /.login-logo -->
 		<div class="login-box-body">
 			<p class="login-box-msg">请登录</p>
-			<div class="form-element">
+			<form action="${pageContext.request.contextPath}/login/page" method="post" class="form-element">
+				<input type="hidden" id="${_csrf.parameterName}" name="${_csrf.parameterName}" value="${_csrf.token }"/>
 				<div class="form-group has-feedback">
-					<input id="account" type="text" class="form-control" placeholder="账号/邮箱/手机号">
+					<input id="account" name="username" type="text" class="form-control" placeholder="账号/邮箱/手机号">
 					<span class="ion ion-person form-control-feedback"></span>
 				</div>
 				<div class="form-group has-feedback">
-					<input id="passwd" type="password" class="form-control" placeholder="密码">
+					<input id="passwd" name="password" type="password" class="form-control" placeholder="密码">
 					<span class="ion ion-locked form-control-feedback"></span>
 				</div>
 				<div class="row">
 					<div class="col-6">
 						<div class="checkbox">
-							<input type="checkbox" id="basic_checkbox_1"> <label
+							<input type="checkbox" id="basic_checkbox_1" name="remember-me" > <label
 								for="basic_checkbox_1">记住我</label>
 						</div>
 					</div>
@@ -56,10 +57,10 @@
 						</div>
 					</div>
 					<div class="col-12 text-center">
-						<button id="login" class="btn btn-info btn-block margin-top-10">登录</button>
+						<button id="login" type="submit" class="btn btn-info btn-block margin-top-10">登录</button>
 					</div>
 				</div>
-			</div>
+			</form>
 		</div>
 	</div>
 	<!-- jQuery 3 -->
@@ -73,6 +74,6 @@
 	<!-- Bootstrap 4.0-->
 	<script
 		src="${pageContext.request.contextPath}/assets/vendor_components/bootstrap/dist/js/bootstrap.min.js"></script>
-	<script src="${pageContext.request.contextPath}/js/login.js"></script>
+	
 </body>
 </html>

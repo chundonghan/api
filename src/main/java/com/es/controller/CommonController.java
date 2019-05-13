@@ -1,6 +1,7 @@
 package com.es.controller;
 
 import java.io.IOException;
+import java.security.Principal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -11,17 +12,24 @@ import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.ModelAndView;
 
+import com.es.common.util.Pager;
 import com.es.service.common.MongoDBService;
+import com.es.service.ums.SystemInfoService;
 import com.es.service.ums.UserService;
 
 @Controller
@@ -30,30 +38,54 @@ public class CommonController {
 
 	private Logger logger = LoggerFactory.getLogger(CommonController.class);
 
+	@Value("${system.default.pagenum}")
+	private int defaultPageNum;
+	
 	@Autowired
 	private MongoDBService mongoDBService;
 
 	@Autowired
 	private UserService userService;
-
-	@GetMapping("/login")
-	public String loginPage(String account, String passwd) {
-		return "login";
+	@Autowired
+    private SystemInfoService systemInfoService;
+	
+	@RequestMapping(value="/hall/index",method= {RequestMethod.GET,RequestMethod.POST})
+	public ModelAndView index() {
+	    ModelAndView mv = new ModelAndView();
+		
+		mv.setViewName("hall");
+		return mv;
 	}
-
+	/**
+	 * #展示系统列表
+	 * @param principal
+	 * @return
+	 */
 	@ResponseBody
-	@PostMapping("/login")
-	public Map<String, Object> login(
-			@RequestParam(value = "account", required = false, defaultValue = "") String account, 
-			@RequestParam(value = "passwd", required = false, defaultValue = "") String passwd) {
-		Map<String, Object> params = new HashMap<>();
-		params.put("account", account);
-		params.put("passwd", passwd);
-		Map<String, Object> retMap = userService.login(params);
-
-		return retMap;
+	@PostMapping("/hall/system/list")
+	public Pager<Map<String, Object>> getSystemInfoList(Principal principal,
+	        @RequestParam(value="currentPage") String currentPage,
+	        @RequestParam(value="pageNum") String pageNum) {
+	    int currentPageInt;
+	    int pageNumInt;
+	    try {
+	        currentPageInt = Integer.parseInt(currentPage);
+	        pageNumInt = Integer.parseInt(pageNum);
+	    }catch(NumberFormatException e) {
+	        currentPageInt = 1;
+	        pageNumInt = defaultPageNum;
+	    }
+	    
+	    Authentication authentication = (Authentication) principal;
+        User user= (User) authentication.getPrincipal();
+        Map<String,Object> params = new HashMap<>();
+        params.put("account", user.getUsername());
+        params.put("currentPage", currentPageInt);
+        params.put("pageNum", pageNumInt);
+        Pager<Map<String,Object>> pager = systemInfoService.getSystemInfoPager(params);
+        return pager;
 	}
-
+	
 	@ResponseBody
 	@PostMapping("/upload")
 	public Map<String, Object> upload(MultipartFile file) throws IOException {

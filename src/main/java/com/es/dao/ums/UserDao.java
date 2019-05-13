@@ -11,16 +11,17 @@ import org.springframework.stereotype.Component;
 public interface UserDao {
 	
 	/**
-	 * 登录
+	 * #获取用户信息
 	 * @param params
 	 * @return
 	 */
-	Map<String,Object> login(Map<String,Object> params);
+	Map<String,Object> getUser(Map<String,Object> params);
+
 	
 	/**
-	 * 系统列表
+	 * #角色列表
 	 * @param params
 	 * @return
 	 */
-	List<Map<String,Object>> getSystemList(Map<String,Object> params);
+	List<Map<String,Object>> getRoleList(Map<String,Object> params);
 }

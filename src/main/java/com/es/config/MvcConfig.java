@@ -23,20 +23,28 @@ public class MvcConfig implements WebMvcConfigurer {
 	 * 	解决ajax跨域问题
 	 * 	
 	 */
-	/*@Override
+	@Override
 	public void addCorsMappings(CorsRegistry registry) {
-		registry.addMapping("/**").allowedOrigins("*").allowCredentials(true)
+/*		registry.addMapping("/**").allowedOrigins("*").allowCredentials(true)
 				.allowedMethods("GET", "POST", "OPTIONS", "PUT")
 				.allowedHeaders("Content-Type", "X-Requested-With", "accept", "Origin", "Access-Control-Request-Method",
 						"Access-Control-Request-Headers")
-				.exposedHeaders("Access-Control-Allow-Origin", "Access-Control-Allow-Credentials");
-	}*/
+				.exposedHeaders("Access-Control-Allow-Origin", "Access-Control-Allow-Credentials");*/
+		
+		 WebMvcConfigurer.super.addCorsMappings(registry);
+         registry.addMapping("/**")//需要跨域访问的Map路径
+         .allowedOrigins("http://192.168.173.22:8090")//允许跨域访问的ip及端口
+         .allowedHeaders("*")//允许跨域访问的Headers内容
+         .allowedMethods("POST", "GET", "PUT", "OPTIONS", "DELETE")//允许跨域访问的方法，OPTIONS必须设置Shiro中用到
+         .allowCredentials(true);
+	}
 	
+	/* spring security*/
 	@Override
     public void addViewControllers(ViewControllerRegistry registry) {
-		registry.addViewController("/").setViewName("login");
+		/*registry.addViewController("/").setViewName("login");
 		registry.addViewController("/login/page").setViewName("login");
-        registry.setOrder(Ordered.HIGHEST_PRECEDENCE);
+        registry.setOrder(Ordered.HIGHEST_PRECEDENCE);*/
     }
 	
 	// 国际化拦截器

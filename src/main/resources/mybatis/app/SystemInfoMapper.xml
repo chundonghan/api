@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.es.dao.ums.SystemInfoDao">
+<mapper namespace="com.es.dao.app.SystemInfoDao">
 	<!-- 获取系统列表 -->
 	<select id="getSystemInfoList" parameterType="Map"  resultType="Map">
         SELECT  DISTINCT a.SYSTEM_ID,a.SYSTEM_NAME,a.SYSTEM_URL,a.SYSTEM_ICON

@@ -14,8 +14,11 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
-import com.es.dao.ums.UserDao;
+import com.es.dao.app.UserDao;
+import com.es.dao.redis.RedisDao;
 
 /**
  * UserDetailsService接口实现类,定义用户服务类 通过该接口获取用户信息
@@ -32,17 +35,18 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 	/**
 	 * 根据用户名称 获取用户信息以及角色
 	 */
+	@Transactional(propagation = Propagation.SUPPORTS)
 	@Override
 	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
 		Map<String, Object> params = new HashMap<>();
 		params.put("username", username);
 		Map<String, Object> userMap = userDao.getUser(params);
 		if (userMap != null) {
-			BigInteger userId = (BigInteger) userMap.get("USER_ID");
-			String password = (String) userMap.get("PASSWD");
+			BigInteger userId = (BigInteger) userMap.get("user_id");
+			String password = (String) userMap.get("passwd");
 			params.clear();
-			params.put("userId", userId);
-			String account = (String) userMap.get("ACCOUNT");
+			params.put("user_id", userId);
+			String account = (String) userMap.get("account");
 			List<Map<String, Object>> roleList = userDao.getRoleList(params);
 			return getUserDetails(account, password, roleList);
 		}
@@ -56,7 +60,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 		//
 		GrantedAuthority grantedAuthority = null;
 		for (Map<String, Object> roleMap : roleList) {
-			grantedAuthority = new SimpleGrantedAuthority((String) roleMap.get("ROLE_CODE"));
+			grantedAuthority = new SimpleGrantedAuthority((String) roleMap.get("role_code"));
 			grantedAuthorityList.add(grantedAuthority);
 		}
 		// 创建UserDetails对象 设置用户名 密码 参数

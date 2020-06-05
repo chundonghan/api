@@ -1,14 +1,16 @@
-package com.es.service.ums.impl;
+package com.es.service.app.impl;
 
 import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.es.common.util.Pager;
-import com.es.dao.ums.SystemInfoDao;
-import com.es.service.ums.SystemInfoService;
+import com.es.dao.app.SystemInfoDao;
+import com.es.service.app.SystemInfoService;
 
 @Service
 public class SystemInfoServiceImpl implements SystemInfoService {
@@ -16,6 +18,7 @@ public class SystemInfoServiceImpl implements SystemInfoService {
     @Autowired
     private SystemInfoDao systemInfoDao;
 
+    @Transactional(propagation = Propagation.SUPPORTS)
     @Override
     public Pager<Map<String, Object>> getSystemInfoPager(Map<String, Object> params) {
         String account = (String) params.get("account");

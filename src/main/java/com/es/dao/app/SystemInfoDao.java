@@ -1,4 +1,4 @@
-package com.es.dao.ums;
+package com.es.dao.app;
 
 import java.util.List;
 import java.util.Map;
@@ -7,7 +7,6 @@ import org.apache.ibatis.annotations.Mapper;
 import org.springframework.stereotype.Component;
 
 @Mapper/* 代替mybatis xml文件  */
-@Component
 public interface SystemInfoDao {
 	
     

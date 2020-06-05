@@ -19,6 +19,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -28,65 +29,52 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.ModelAndView;
 
 import com.es.common.util.Pager;
+import com.es.common.util.SnowflakeIdWorker;
+import com.es.dao.redis.RedisDao;
+import com.es.service.app.MenuService;
+import com.es.service.app.SystemInfoService;
+import com.es.service.app.UserService;
 import com.es.service.common.MongoDBService;
-import com.es.service.ums.SystemInfoService;
-import com.es.service.ums.UserService;
 
-@Controller
+@RestController
 @CrossOrigin // 解决ajax跨域问题
 public class CommonController {
-
 	private Logger logger = LoggerFactory.getLogger(CommonController.class);
 
-	@Value("${system.default.pagenum}")
-	private int defaultPageNum;
+	@Autowired
+	private RedisDao redisDao;
 	
 	@Autowired
 	private MongoDBService mongoDBService;
 
 	@Autowired
-	private UserService userService;
-	@Autowired
-    private SystemInfoService systemInfoService;
+	private MenuService menuService;
 	
-	@RequestMapping(value="/hall/index",method= {RequestMethod.GET,RequestMethod.POST})
-	public ModelAndView index() {
-	    ModelAndView mv = new ModelAndView();
-		
-		mv.setViewName("hall");
-		return mv;
-	}
 	/**
-	 * #展示系统列表
-	 * @param principal
+	 * 菜单列表
+	 * @param token
 	 * @return
 	 */
-	@ResponseBody
-	@PostMapping("/hall/system/list")
-	public Pager<Map<String, Object>> getSystemInfoList(Principal principal,
-	        @RequestParam(value="currentPage") String currentPage,
-	        @RequestParam(value="pageNum") String pageNum) {
-	    int currentPageInt;
-	    int pageNumInt;
-	    try {
-	        currentPageInt = Integer.parseInt(currentPage);
-	        pageNumInt = Integer.parseInt(pageNum);
-	    }catch(NumberFormatException e) {
-	        currentPageInt = 1;
-	        pageNumInt = defaultPageNum;
-	    }
-	    
-	    Authentication authentication = (Authentication) principal;
-        User user= (User) authentication.getPrincipal();
-        Map<String,Object> params = new HashMap<>();
-        params.put("account", user.getUsername());
-        params.put("currentPage", currentPageInt);
-        params.put("pageNum", pageNumInt);
-        Pager<Map<String,Object>> pager = systemInfoService.getSystemInfoPager(params);
-        return pager;
+	@GetMapping("/app/menu")
+	public List<Map<String, Object>> menu(@RequestHeader(value="token") String token){
+		String username = redisDao.get(token);
+		Map<String, Object> params = new HashMap<String, Object>();
+		params.put("username", username);
+		return menuService.getMenus(params);
 	}
 	
-	@ResponseBody
+	/**
+	 * 生成id
+	 * @param token
+	 * @return
+	 */
+	@PostMapping("/generate/id")
+	public Map<String, Object> generateId(@RequestHeader(value="token") String token){
+		Map<String, Object> retMap = new HashMap<String, Object>();
+		retMap.put("id", new SnowflakeIdWorker(0, 0).nextId());
+		return retMap;
+	}
+	
 	@PostMapping("/upload")
 	public Map<String, Object> upload(MultipartFile file) throws IOException {
 		Map<String, Object> ret = new HashMap<>();

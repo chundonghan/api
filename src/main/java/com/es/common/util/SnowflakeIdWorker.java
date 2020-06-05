@@ -172,11 +172,14 @@ public class SnowflakeIdWorker {
 	public static void main(String[] args) throws UnknownHostException {
 		
 		SnowflakeIdWorker idWorker = new SnowflakeIdWorker(0, 0);
-		/*for (int i = 0; i < 1000; i++) {*/
+		for (int i = 0; i < 10; i++) {
+			System.out.println(new SnowflakeIdWorker(0, 0).nextId());
+		}
+		for (int i = 0; i < 10; i++) {
 			long id = idWorker.nextId();
 			//System.out.println(Long.toBinaryString(id));
 			System.out.println(id);
-		/*}*/
+		}
 
 	}
 }

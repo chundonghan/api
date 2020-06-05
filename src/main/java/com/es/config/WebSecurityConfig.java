@@ -10,8 +10,8 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
-@Configuration
-@EnableWebSecurity
+//@Configuration
+//@EnableWebSecurity
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
 	@Autowired
@@ -47,9 +47,10 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 				 * .requiresChannel().antMatchers("/ums/**").requiresInsecure()
 				 */
 				// 限定 /ums/ 下所有请求权限赋予角色ROLE_ADMIN
-				.antMatchers("/ums/**").access("hasRole('USER')")
+				//.antMatchers("/ums/**").access("hasRole('USER')")
+				.antMatchers("/index").access("hasRole('USER')")
 				.antMatchers("/login/page").permitAll()
-				.antMatchers("/hall/**").access("hasRole('USER')")
+				//.antMatchers("/hall/**").access("hasRole('USER')")
 				// .anyRequest().authenticated()
 				// 通过签名后可以访问任何请求
 				// 其他路径允许签名后访问
@@ -59,7 +60,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 				// 使用记住我的功能
 				// .and().rememberMe().tokenValiditySeconds(86400).key("remember-me-key")
 				// 登录页面配置
-				.and().formLogin().loginPage("/login/page").defaultSuccessUrl("/hall/index").failureUrl("/login/page?error").permitAll()
+				.and().formLogin().loginPage("/login/page").defaultSuccessUrl("/index").failureUrl("/login/page?error").permitAll()
 				.and().logout().logoutUrl("/logout").logoutSuccessUrl("/login/page");
 				// 启用http基础验证
 				//.and().httpBasic();

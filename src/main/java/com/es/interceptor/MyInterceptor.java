@@ -13,6 +13,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.ModelAndView;
 
+import com.alibaba.druid.support.json.JSONUtils;
+
 
 /**
  *  #拦截器流程图: 
@@ -51,8 +53,8 @@ public class MyInterceptor implements HandlerInterceptor {
 		PrintWriter writer = response.getWriter();
 		Map<String,String> map = new HashMap<>();
 		map.put("code", "1");
-		//writer.append(JSONUtils.toJSONString(appService.getAllAccounts()));
-		return false;
+		writer.append(JSONUtils.toJSONString(map));
+		return true;
 	}
 
 	@Override

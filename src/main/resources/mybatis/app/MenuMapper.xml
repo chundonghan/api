@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.es.dao.app.MenuDao">
+	<!-- 获取用户菜单 -->
+	<select id="getMenus" parameterType="Map"  resultType="Map">
+		SELECT 
+			a.menu_id,a.title,a.sub_title,a.route,a.i,a.menu_level,a.parent_id,a.title as name
+		FROM menu a
+		INNER JOIN role_menu_relation b ON b.menu_id = a.menu_id
+		INNER JOIN role c ON c.role_id = b.role_id 
+		INNER JOIN user_role_relation d ON d.role_id = c.role_id
+		INNER JOIN user e ON e.user_id = d.user_id AND 
+		(
+			e.account = #{username} 
+			OR
+			e.email = #{username} 
+			OR
+			e.mobile_phone = #{username} 
+		)
+		ORDER BY a.menu_level ASC,a.menu_order ASC
+	</select>
+	
+</mapper>

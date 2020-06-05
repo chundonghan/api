@@ -1,0 +1,360 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.es.dao.app.ImDao">
+	<!-- 查询即时通讯窗口列表 --> 
+	<select id="getImWindows" parameterType="Map"  resultType="Map">
+		SELECT 
+			'0' AS is_group,
+			b.im_window,
+			b.im_window as ele_id,
+			c.avatar,
+			c.nickname,
+			b.last_msg,
+			IFNULL(d.notice_type,'1') as notice_type,
+			(CASE 
+			WHEN TIMESTAMPDIFF(day,b.create_timestamp,now()) = 0
+			THEN
+		 		DATE_FORMAT(b.create_timestamp,'%H:%i')
+		
+			WHEN TIMESTAMPDIFF(day,b.create_timestamp,now()) = 1
+			THEN
+				'昨天'
+			WHEN TIMESTAMPDIFF(day,b.create_timestamp,now()) >=2 AND TIMESTAMPDIFF(week,b.create_timestamp,now()) = 0
+			AND (DATE_FORMAT(now(),'%v')-DATE_FORMAT(b.create_timestamp,'%v')) = 0
+			THEN 
+				(CASE DATE_FORMAT(b.create_timestamp,'%w')
+					WHEN 0 THEN '星期日'
+					WHEN 1 THEN '星期一'
+					WHEN 2 THEN '星期二'
+					WHEN 3 THEN '星期三'
+					WHEN 4 THEN '星期四'
+					WHEN 5 THEN '星期五'
+					WHEN 6 THEN '星期六'
+				END)
+			ELSE
+				DATE_FORMAT(b.create_timestamp,'%y/%m/%d')
+			END) AS away_from,
+			b.create_timestamp
+		FROM
+		(SELECT
+			(CASE WHEN a.from_account = #{username} THEN a.to_account
+							ELSE a.from_account END) AS im_window,
+			a.msg AS last_msg,
+			a.create_timestamp
+		FROM im_message a 
+		WHERE 
+			(a.from_account = #{username} and a.from_enable_flag != '1')
+			or (a.to_account = #{username} AND a.to_enable_flag != '1')
+			ORDER BY a.create_timestamp desc limit 999999999999
+		) b
+		INNER JOIN user c on c.account = b.im_window
+		LEFT JOIN im_window_attr d on d.from_account = #{username} AND d.to_account = b.im_window
+		group by b.im_window
+		
+		UNION ALL
+		SELECT 
+			'1' AS is_group,
+			j.group_id as im_window,
+			CONCAT('g',j.group_id) as ele_id,
+			(SELECT SUBSTRING_INDEX(GROUP_CONCAT(l.avatar),",",9) from user l WHERE FIND_IN_SET(l.account,j.account_set)) as avatar,
+			j.group_name as nickname,
+			j.msg AS last_msg,
+			IFNULL(i.notice_type,'1') as notice_type,
+			(CASE 
+				WHEN TIMESTAMPDIFF(day,j.create_timestamp,now()) = 0
+				THEN
+					DATE_FORMAT(j.create_timestamp,'%H:%i')
+			
+				WHEN TIMESTAMPDIFF(day,j.create_timestamp,now()) = 1
+				THEN
+					'昨天'
+				WHEN TIMESTAMPDIFF(day,j.create_timestamp,now()) >=2 AND TIMESTAMPDIFF(week,j.create_timestamp,now()) = 0
+				AND (DATE_FORMAT(now(),'%v')-DATE_FORMAT(j.create_timestamp,'%v')) = 0
+				THEN 
+					(CASE DATE_FORMAT(j.create_timestamp,'%w')
+						WHEN 0 THEN '星期日'
+						WHEN 1 THEN '星期一'
+						WHEN 2 THEN '星期二'
+						WHEN 3 THEN '星期三'
+						WHEN 4 THEN '星期四'
+						WHEN 5 THEN '星期五'
+						WHEN 6 THEN '星期六'
+					END)
+				ELSE
+					DATE_FORMAT(j.create_timestamp,'%y/%m/%d')
+			END) AS away_from,
+			j.create_timestamp
+		FROM 
+		(
+			SELECT 
+			e.group_id,
+			f.group_name,
+			e.user_account,
+			(SELECT GROUP_CONCAT(k.user_account) FROM im_group_account k 
+			INNER JOIN user n ON n.account = k.user_account AND n.enable_flag = '0'
+			WHERE k.group_id = f.id) as account_set,
+			e.msg ,
+			e.create_timestamp
+			FROM im_group_message e
+			INNER JOIN im_group f ON e.group_id = f.id AND f.enable_flag = '0'
+			INNER JOIN im_group_account g ON g.group_id = f.id AND g.enable_flag = '0' AND g.user_account = #{username}
+			INNER JOIN user m ON m.account = e.user_account AND m.enable_flag = '0'
+			ORDER BY e.create_timestamp desc limit 999999999999
+		) j
+		LEFT JOIN im_window_attr i on i.from_account = #{username} AND i.to_account = j.group_id
+		group by j.group_id
+		
+		ORDER BY notice_type DESC,create_timestamp DESC
+	</select>
+	
+	<!-- 查询即时通讯消息列表 私聊 -->
+	<select id="getImMessages" parameterType="Map"  resultType="Map">
+		SELECT
+			b.* ,
+			(SELECT avatar from user c WHERE c.account = b.from_account) as avatar
+		FROM 
+		(
+			SELECT
+				a.id,
+				a.msg,
+				a.from_account,
+				(CASE WHEN a.from_account = #{from_account} THEN 'to'
+						ELSE 'from' END) as from_to,
+				a.create_timestamp,a.msg_group
+			FROM im_message a 
+			WHERE 
+			(a.from_account = #{from_account} AND a.to_account = #{to_account} AND a.from_enable_flag != '1')
+			OR (a.to_account = #{from_account} AND a.from_account = #{to_account} AND a.to_enable_flag != '1')
+			ORDER BY a.create_timestamp DESC limit #{currentIndex},#{pageNum}
+		) b 
+		ORDER BY b.create_timestamp ASC
+	</select>
+	<!-- 即时通讯消息总数量  私聊-->
+	<select id="getImMessagesCount" parameterType="Map" resultType="int">
+		SELECT
+			count(1)
+		FROM im_message a 
+		WHERE 
+		(a.from_account = #{from_account} AND a.to_account = #{to_account} AND a.from_enable_flag != '1')
+		OR (a.to_account = #{from_account} AND a.from_account = #{to_account} AND a.to_enable_flag != '1')
+		
+	</select>
+	<!-- 查询即时通讯消息列表 群聊 -->
+	<select id="getImGroupMessages" parameterType="Map"  resultType="Map">
+		SELECT
+			c.*
+		FROM
+		(
+		SELECT
+			a.id,
+			a.msg,
+			a.user_account as from_account,
+			(CASE WHEN a.user_account = #{user_account} THEN 'to'
+						ELSE 'from' END) as from_to,
+			a.create_timestamp,a.msg_group,
+			b.avatar
+		FROM
+			im_group_message a
+		INNER JOIN user b ON b.account = a.user_account AND b.enable_flag = '0'
+		WHERE
+			a.enable_flag = '0'
+			AND a.group_id = #{group_id}
+		ORDER BY a.create_timestamp DESC limit #{currentIndex},#{pageNum}
+		) c
+		ORDER BY c.create_timestamp ASC
+	</select>
+	<!-- 即时通讯消息总数量  群聊 -->
+	<select id="getImGroupMessagesCount" parameterType="Map" resultType="int">
+		SELECT
+			count(1)
+		FROM im_group_message a 
+		WHERE a.group_id = #{group_id}
+			AND a.enable_flag = '0'
+	</select>
+	<update id="updateMessageFromFlag" parameterType="Map">
+		UPDATE im_message SET from_enable_flag = '1' 
+		WHERE from_account = #{from_account}
+		AND to_account = #{to_account}
+	</update>
+	
+	<update id="updateMessageToFlag" parameterType="Map">
+		UPDATE im_message SET to_enable_flag = '1' 
+		WHERE from_account = #{to_account}
+		AND to_account = #{from_account}
+	</update>
+	
+	<select id="findWindowAttr" parameterType="Map" resultType="Map">
+		SELECT * FROM im_window_attr
+		WHERE from_account = #{from_account}
+		AND to_account = #{to_account}
+	</select>
+	<update id="updateWindowAttr">
+		UPDATE im_window_attr SET notice_type = #{notice_type}
+		WHERE from_account = #{from_account}
+		AND to_account = #{to_account}
+	</update>
+	<insert id="saveWindowAttr">
+		INSERT INTO im_window_attr VALUES(#{id},#{from_account},#{to_account},#{notice_type})
+	</insert>
+	<!-- 查询联系人列表 -->
+	<select id="getContacts" parameterType="Map" resultType="Map">
+		SELECT
+			c.account,c.nickname,c.avatar
+		FROM im_contact b
+		INNER JOIN user c ON b.user_account = c.account AND c.enable_flag = '0'
+		WHERE  b.contact_user_account = #{account}  AND FIND_IN_SET ( 
+				b.user_account,
+				(SELECT 
+					group_concat(a.contact_user_account)
+				FROM im_contact a 
+				WHERE a.user_account = #{account} AND a.enable_flag = '0') 
+			 )
+	</select>
+	
+	<!-- 申请列表 -->
+	<select id="getApplies" parameterType="Map" resultType="Map">
+		SELECT 
+			c.account,c.nickname,c.avatar,e.*
+		FROM
+		(
+			SELECT
+			DISTINCT b.user_account,b.validate_msg,
+			(CASE WHEN ISNULL(d.contact_user_account)
+			THEN '0'
+			ELSE '1'
+			END) AS contact_flag
+			FROM(
+			SELECT 
+				a.user_account,a.validate_msg
+			FROM im_contact a 
+			WHERE contact_user_account = #{account}
+			AND validate_msg != ''
+			) b 
+			LEFT JOIN im_contact d on b.user_account = d.contact_user_account and d.user_account = #{account}
+		) e
+		INNER JOIN user c ON e.user_account = c.account AND c.enable_flag = '0'
+	</select>
+	
+	<!-- 接受联系人申请 
+		user_account 当前登录账号
+		contact_user_account 列表项账号
+	-->
+	<insert id="acceptOrApply" parameterType="Map">
+		INSERT INTO im_contact VALUES(#{id},#{user_account},#{contact_user_account},NOW(),null,'0',#{validate_msg})
+	</insert>
+	<!-- 关系已存在 -->
+	<select id="existContact" parameterType="Map" resultType="int">
+		select count(id) from im_contact 
+		where user_account = #{user_account} 
+		and contact_user_account = #{contact_user_account} 
+		and enable_flag = '0'
+	</select>
+	
+	<!-- 是否相互为联系人 -->
+	<select id="ifInterContact" parameterType="Map" resultType="int">
+		SELECT count(1)
+		FROM im_contact
+		WHERE 
+		(user_account = #{from_account} and contact_user_account = #{to_account})
+		or
+		(user_account = #{to_account} and contact_user_account = #{from_account})
+	</select>
+	
+	<!-- 删除(已接受)在申请列表显示 
+		contact_user_account 当前登录账号
+		user_account 列表项账号
+	-->
+	<update id="removeApplied" parameterType="Map">
+		UPDATE im_contact SET validate_msg = ''
+		WHERE user_account = #{user_account} AND contact_user_account = #{contact_user_account}
+	</update>
+	<!-- 删除(未接受)在申请列表显示 
+		contact_user_account 当前登录账号
+		user_account 列表项账号
+	-->
+	<delete id="denyApply" parameterType="Map">
+		DELETE FROM im_contact 
+		WHERE user_account = #{user_account} AND contact_user_account = #{contact_user_account}
+	</delete>
+	
+	<!-- 获取即时通讯用户信息 -->
+	<select id="getImUserInfo" parameterType="Map" resultType="Map">
+		SELECT 
+			a.account,a.nickname,a.avatar,
+			(CASE a.gender 
+				WHEN '2' THEN 'el-icon-female'
+				WHEN '1' THEN 'el-icon-male'
+			END) AS gender_class
+		FROM user a
+		WHERE 
+			enable_flag = '0'
+			AND account = #{account} 
+	</select>
+	
+	<!-- 保存聊天记录/创建聊天窗口 -->
+	<insert id="saveMessage" parameterType="ImMessage">
+		INSERT INTO im_message VALUES(#{id},#{from_account},#{to_account},#{msg},now(),0,0,#{msg_group})
+	</insert>
+	<!-- 获取创建的聊天窗口 -->
+	<select id="getImWindow" parameterType="Map" resultType="Map">
+		SELECT 
+			c.account as im_window,
+			c.avatar,
+			c.nickname,
+			a.msg as last_msg,
+			'1' as notice_type,
+			DATE_FORMAT(a.create_timestamp,'%H:%i') as away_from
+		FROM 
+		im_message a 
+		INNER JOIN user c on c.account = a.to_account
+		WHERE a.id = #{id}
+	</select>
+	<update id="updateMessageFlag" parameterType="Map">
+		UPDATE im_message SET from_enable_flag = #{from_enable_flag},to_enable_flag = #{to_enable_flag}
+		WHERE id = #{id} 
+	</update>
+	
+	
+	<!-- 根据账号或手机号模糊搜索账号列表 -->
+	<select id="selectUsers" parameterType="Map" resultType="Map">
+		SELECT account as value
+		FROM user
+		WHERE
+			enable_flag = '0'
+			AND
+			(
+				ACCOUNT like CONCAT('%',#{query} ,'%') 
+				OR
+				EMAIL like  CONCAT('%',#{query} ,'%') 
+				OR
+				MOBILE_PHONE like CONCAT('%',#{query} ,'%') 
+			)
+	
+	</select>
+	<!-- 插入组创建记录 -->
+	<insert id="saveGroup" parameterType="Map">
+		INSERT INTO im_group VALUES(#{id},#{group_name},NOW(),'0',null,#{group_host})
+	</insert>
+	<!-- 批量插入群成员账号 -->
+	<insert id="batchSaveGroupAccount" parameterType="List">
+		INSERT INTO im_group_account
+		VALUES
+		<foreach collection="list" item="item" index="index" separator=",">
+			(#{item.id},#{item.group_id},#{item.user_account},now(),'0',null)
+		</foreach>
+	</insert>
+	<!-- 创建群聊天窗口 -->
+	<insert id="batchCreateGroupWindow" parameterType="List">
+		INSERT INTO im_group_message
+		VALUES
+		<foreach collection="list" item="item" index="index" separator=",">
+			(#{item.id},#{item.group_id},#{item.user_account},#{item.msg},now(),'0')
+		</foreach>
+	</insert>
+	<!-- 插入群聊记录 -->
+	<insert id="saveGroupMessage" parameterType="Map">
+		INSERT INTO im_group_message
+		VALUES(#{id},#{group_id},#{user_account},#{msg},now(),'0')
+	</insert>
+</mapper>
